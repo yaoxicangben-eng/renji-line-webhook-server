@@ -1,0 +1,35 @@
+# 秘密情報を含む環境変数ファイル
+.env
+config/.env
+*.env
+
+# Googleサービスアカウント認証JSON
+*service-account*.json
+*credentials*.json
+config/google-service-account.json
+*.json
+
+# 事業データ・分析結果・制作物
+data/
+outputs/
+knowledge/
+prompts/
+checklists/
+seminar-slide-factory/
+agents/
+scripts/
+docs/*
+!docs/render_deploy.md
+*.csv
+*.xlsx
+*.pdf
+*.pptx
+
+# Pythonキャッシュ
+**pycache**/
+__pycache__/
+*.pyc
+.venv/
+
+# macOS
+.DS_Store
