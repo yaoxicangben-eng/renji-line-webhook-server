@@ -24,6 +24,20 @@ logger = logging.getLogger(__name__)
 SCOPES = ["https://www.googleapis.com/auth/spreadsheets"]
 
 
+def _safe_error_summary(error: Exception) -> str:
+    """秘密情報を含まないGoogle Sheets処理のエラー要約を返す。"""
+    error_type = type(error).__name__
+    safe_messages = {
+        "FileNotFoundError": "credential file or required file was not found",
+        "JSONDecodeError": "service account JSON could not be decoded",
+        "ValueError": "Google Sheets configuration is invalid",
+        "PermissionError": "permission was denied",
+        "HttpError": "Google Sheets API request failed",
+        "TransportError": "Google API connection failed",
+    }
+    return safe_messages.get(error_type, "unexpected Google Sheets error")
+
+
 def _required_env(name: str) -> str:
     value = os.getenv(name, "").strip()
     if not value:
@@ -77,9 +91,11 @@ def get_sheets_service():
     try:
         credentials = _get_service_account_credentials()
         return build("sheets", "v4", credentials=credentials, cache_discovery=False)
-    except Exception:
-        logger.exception(
-            "Google Sheets APIサービスの作成に失敗しました。認証情報の値はログへ出力しません。"
+    except Exception as error:
+        logger.error(
+            "Google Sheets service creation failure: exception_type=%s summary=%s",
+            type(error).__name__,
+            _safe_error_summary(error),
         )
         raise
 
@@ -93,8 +109,12 @@ def _ensure_sheet_exists(service, spreadsheet_id: str, sheet_name: str) -> None:
             spreadsheetId=spreadsheet_id,
             fields="sheets.properties.title",
         ).execute()
-    except Exception:
-        logger.exception("Googleスプレッドシートのシート一覧取得に失敗しました。")
+    except Exception as error:
+        logger.error(
+            "Google Sheets metadata failure: exception_type=%s summary=%s",
+            type(error).__name__,
+            _safe_error_summary(error),
+        )
         raise
 
     sheet_names = {
@@ -144,8 +164,13 @@ def append_rows(sheet_name: str, rows: list[list]) -> dict:
         ).execute()
         logger.info("シート `%s` に%d行追記しました。", sheet_name, len(rows))
         return result
-    except Exception:
-        logger.exception("シート `%s` への行追記に失敗しました。", sheet_name)
+    except Exception as error:
+        logger.error(
+            "Google Sheets append failure: sheet=%s exception_type=%s summary=%s",
+            sheet_name,
+            type(error).__name__,
+            _safe_error_summary(error),
+        )
         raise
 
 

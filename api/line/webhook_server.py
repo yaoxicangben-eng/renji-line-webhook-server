@@ -14,7 +14,7 @@ from fastapi.responses import JSONResponse
 
 from api.google_sheets.sheet_schema import LINE_EVENTS_SHEET, LINE_USERS_SHEET
 from api.google_sheets.sheets_client import append_row
-from api.line.line_signature import line_signature_diagnostics, verify_line_signature
+from api.line.line_signature import verify_line_signature
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
@@ -27,6 +27,20 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 app = FastAPI(title="Renji LINE Webhook", version="1.0.0")
+
+
+def safe_error_summary(error: Exception) -> str:
+    """秘密情報を含まない短いエラー要約を返す。"""
+    error_type = type(error).__name__
+    safe_messages = {
+        "FileNotFoundError": "credential file or required file was not found",
+        "JSONDecodeError": "received JSON could not be decoded",
+        "ValueError": "configuration or request data is invalid",
+        "PermissionError": "permission was denied",
+        "HttpError": "Google Sheets API request failed",
+        "TransportError": "external API connection failed",
+    }
+    return safe_messages.get(error_type, "unexpected processing error")
 
 
 def iso_datetime_from_millis(timestamp: object) -> str:
@@ -83,19 +97,15 @@ async def health() -> dict[str, str]:
 async def line_webhook(request: Request) -> JSONResponse:
     body = await request.body()
     signature = request.headers.get("X-Line-Signature", "")
+    channel_secret_exists = bool(os.getenv("LINE_CHANNEL_SECRET", "").strip())
+
+    logger.info("webhook received")
+    logger.info("request body length: %d", len(body))
+    logger.info("signature header exists: %s", str(bool(signature)).lower())
+    logger.info("LINE_CHANNEL_SECRET exists: %s", str(channel_secret_exists).lower())
 
     if not verify_line_signature(body, signature):
-        diagnostics = line_signature_diagnostics(body, signature)
-        logger.warning(
-            "LINE署名検証失敗: signature header exists: %s, "
-            "LINE_CHANNEL_SECRET exists: %s, body length: %d, "
-            "computed signature length: %d, received signature length: %d",
-            str(diagnostics["signature_header_exists"]).lower(),
-            str(diagnostics["line_channel_secret_exists"]).lower(),
-            diagnostics["body_length"],
-            diagnostics["computed_signature_length"],
-            diagnostics["received_signature_length"],
-        )
+        logger.warning("signature verification failed")
         return JSONResponse(status_code=403, content={"error": "invalid signature"})
 
     try:
@@ -104,36 +114,70 @@ async def line_webhook(request: Request) -> JSONResponse:
         if not isinstance(events, list):
             raise ValueError("Webhook本文の events が配列ではありません。")
 
+        event_types = [
+            str(event.get("type", ""))
+            for event in events
+            if isinstance(event, dict)
+        ]
+        logger.info("event count: %d", len(events))
+        logger.info("event types: %s", ",".join(event_types) if event_types else "none")
+
         saved_events = 0
         saved_users = 0
+        failed_events = 0
+        failed_users = 0
         for event in events:
             if not isinstance(event, dict):
-                logger.warning("辞書形式ではないWebhookイベントをスキップしました。")
+                logger.warning("invalid event skipped")
                 continue
 
             event_type = str(event.get("type", ""))
-            append_row(LINE_EVENTS_SHEET, extract_line_event(event))
-            saved_events += 1
+            source = event.get("source") if isinstance(event.get("source"), dict) else {}
+            logger.info("user_id exists: %s", str(bool(source.get("userId"))).lower())
+
+            logger.info("append line_events start")
+            try:
+                append_row(LINE_EVENTS_SHEET, extract_line_event(event))
+                saved_events += 1
+                logger.info("append line_events success")
+            except Exception as error:
+                failed_events += 1
+                logger.error(
+                    "append line_events failure: exception_type=%s summary=%s",
+                    type(error).__name__,
+                    safe_error_summary(error),
+                )
 
             if event_type == "follow":
-                append_row(LINE_USERS_SHEET, extract_line_user(event))
-                saved_users += 1
+                logger.info("append line_users start")
+                try:
+                    append_row(LINE_USERS_SHEET, extract_line_user(event))
+                    saved_users += 1
+                    logger.info("append line_users success")
+                except Exception as error:
+                    failed_users += 1
+                    logger.error(
+                        "append line_users failure: exception_type=%s summary=%s",
+                        type(error).__name__,
+                        safe_error_summary(error),
+                    )
 
-        logger.info(
-            "LINE Webhookを保存しました。line_events=%d, line_users=%d",
-            saved_events,
-            saved_users,
-        )
         return JSONResponse(
             status_code=200,
             content={
                 "status": "ok",
                 "saved_events": saved_events,
                 "saved_users": saved_users,
+                "failed_events": failed_events,
+                "failed_users": failed_users,
             },
         )
-    except Exception:
-        logger.exception("LINE Webhookイベントの処理中にエラーが発生しました。")
+    except Exception as error:
+        logger.error(
+            "webhook processing failure: exception_type=%s summary=%s",
+            type(error).__name__,
+            safe_error_summary(error),
+        )
         return JSONResponse(
             status_code=200,
             content={"status": "accepted", "saved": False},
