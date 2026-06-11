@@ -14,7 +14,7 @@ from fastapi.responses import JSONResponse
 
 from api.google_sheets.sheet_schema import LINE_EVENTS_SHEET, LINE_USERS_SHEET
 from api.google_sheets.sheets_client import append_row
-from api.line.line_signature import verify_line_signature
+from api.line.line_signature import line_signature_diagnostics, verify_line_signature
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
@@ -85,7 +85,17 @@ async def line_webhook(request: Request) -> JSONResponse:
     signature = request.headers.get("X-Line-Signature", "")
 
     if not verify_line_signature(body, signature):
-        logger.warning("LINE Webhookの署名検証に失敗しました。")
+        diagnostics = line_signature_diagnostics(body, signature)
+        logger.warning(
+            "LINE署名検証失敗: signature header exists: %s, "
+            "LINE_CHANNEL_SECRET exists: %s, body length: %d, "
+            "computed signature length: %d, received signature length: %d",
+            str(diagnostics["signature_header_exists"]).lower(),
+            str(diagnostics["line_channel_secret_exists"]).lower(),
+            diagnostics["body_length"],
+            diagnostics["computed_signature_length"],
+            diagnostics["received_signature_length"],
+        )
         return JSONResponse(status_code=403, content={"error": "invalid signature"})
 
     try:
