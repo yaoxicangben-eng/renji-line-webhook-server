@@ -1,0 +1,81 @@
+{
+  "timing": {
+    "accessDurationMinutes": 5,
+    "salesUnlockVideoSeconds": 60,
+    "countdownPreview": [
+      { "value": "47", "label": "時間" },
+      { "value": "58", "label": "分" },
+      { "value": "24", "label": "秒" }
+    ]
+  },
+  "mux": {
+    "videoId": "seminar-main-video",
+    "playbackId": "",
+    "placeholderTitle": "セミナー動画"
+  },
+  "payment": {
+    "stripePaymentLink": "https://buy.stripe.com/14AbJ33twfkeg9J7vIejK00",
+    "buttonLabel": "今すぐ申し込む",
+    "buttonNote": ""
+  },
+  "notice": {
+    "title": "運営からのお知らせ",
+    "body": [
+      "お申し込み受付を開始しました。",
+      "画面下の緑色のボタンから詳細をご確認いただけます。"
+    ]
+  },
+  "product": {
+    "eyebrow": "PROGRAM",
+    "name": "期限付きセミナー参加者限定プログラム",
+    "description": "セミナーでお伝えした内容を、実際の行動と成果につなげるための仮商品説明です。本番では商品の魅力、得られる変化、対象者、申し込み後の流れをここに整理します。",
+    "price": "29,800円",
+    "priceNote": "税込・期間限定価格",
+    "benefits": [
+      {
+        "title": "特典1 個別ワークシート",
+        "text": "セミナー内容をそのまま行動へ移せる、実践用の記入シートです。"
+      },
+      {
+        "title": "特典2 復習用チェックリスト",
+        "text": "大切なポイントを見落とさず、後から確認できる一覧です。"
+      },
+      {
+        "title": "特典3 期間限定フォロー案内",
+        "text": "申し込み後に次の一歩を迷わないための補足案内をお届けします。"
+      }
+    ],
+    "faq": [
+      {
+        "question": "スマートフォンだけでも視聴できますか？",
+        "answer": "はい。スマートフォン、タブレット、PCから見やすいように調整しています。"
+      },
+      {
+        "question": "申し込み後の流れはどうなりますか？",
+        "answer": "決済完了後に、詳しいご案内をメールまたは案内ページで確認できる想定です。"
+      },
+      {
+        "question": "期限を過ぎた場合はどうなりますか？",
+        "answer": "期限終了後は動画と申し込み導線が表示されない画面へ切り替わる想定です。"
+      }
+    ]
+  },
+  "images": {
+    "beforeVideo": {
+      "src": "/images/love-opening.png",
+      "alt": "たった1ヶ月で追う恋愛から溺愛される側へ、強制シフトする恋愛開運",
+      "width": 1934,
+      "height": 1088
+    },
+    "afterVideo": {
+      "src": "/images/watch-to-end.png",
+      "alt": "動画の最後に大切な贈り物の受け取り方法を説明しています。必ず最後までご視聴ください。",
+      "width": 2172,
+      "height": 724
+    }
+  },
+  "expired": {
+    "title": "視聴期限切れ",
+    "message": "閲覧期限は終了しました"
+  }
+}

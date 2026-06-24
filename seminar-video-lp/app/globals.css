@@ -1,0 +1,36 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  min-height: 100%;
+  background: #f5f8f6;
+}
+
+body {
+  min-height: 100%;
+  margin: 0;
+  color: #1f2933;
+  background:
+    radial-gradient(circle at top left, rgba(23, 163, 74, 0.09), transparent 34rem),
+    linear-gradient(180deg, #fbfdfb 0%, #f5f8f6 42%, #eef4f0 100%);
+  font-family:
+    Arial,
+    "Hiragino Kaku Gothic ProN",
+    "Yu Gothic",
+    Meiryo,
+    sans-serif;
+}
+
+button,
+a {
+  -webkit-tap-highlight-color: transparent;
+}
