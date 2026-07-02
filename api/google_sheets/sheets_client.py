@@ -53,6 +53,24 @@ def _escaped_sheet_name(sheet_name: str) -> str:
     return sheet_name.replace("'", "''")
 
 
+def _column_label(column_number: int) -> str:
+    """1始まりの列番号をGoogle Sheetsの列記号へ変換する。"""
+    if column_number < 1:
+        raise ValueError("column_number は1以上で指定してください。")
+
+    label = ""
+    while column_number:
+        column_number, remainder = divmod(column_number - 1, 26)
+        label = chr(65 + remainder) + label
+    return label
+
+
+def _missing_headers(current: list[str], expected: list[str]) -> list[str]:
+    """現在のヘッダーにない列を、定義順のまま返す。"""
+    current_names = {str(header).strip() for header in current if str(header).strip()}
+    return [header for header in expected if header not in current_names]
+
+
 def _get_service_account_credentials() -> Credentials:
     """RenderのJSON文字列を優先し、なければローカルJSONファイルを使う。"""
     credentials_json = os.getenv("GOOGLE_SERVICE_ACCOUNT_JSON", "").strip()
@@ -130,6 +148,86 @@ def _ensure_sheet_exists(service, spreadsheet_id: str, sheet_name: str) -> None:
         )
 
 
+def setup_sheets(
+    *,
+    service=None,
+    spreadsheet_id: str | None = None,
+    schemas: dict[str, list[str]] | None = None,
+) -> dict[str, list[str]]:
+    """不足シートと不足ヘッダーだけを追加し、既存データを保持する。"""
+    target_service = service or get_sheets_service()
+    target_spreadsheet_id = spreadsheet_id or _spreadsheet_id()
+    target_schemas = schema_by_sheet() if schemas is None else schemas
+
+    if not target_schemas:
+        raise ValueError("初期化対象のシート定義がありません。")
+
+    metadata = target_service.spreadsheets().get(
+        spreadsheetId=target_spreadsheet_id,
+        fields="sheets.properties.title",
+    ).execute()
+    existing_sheets = {
+        sheet.get("properties", {}).get("title", "")
+        for sheet in metadata.get("sheets", [])
+    }
+    missing_sheets = [name for name in target_schemas if name not in existing_sheets]
+
+    if missing_sheets:
+        target_service.spreadsheets().batchUpdate(
+            spreadsheetId=target_spreadsheet_id,
+            body={
+                "requests": [
+                    {"addSheet": {"properties": {"title": sheet_name}}}
+                    for sheet_name in missing_sheets
+                ]
+            },
+        ).execute()
+
+    summary: dict[str, list[str]] = {
+        "created_sheets": missing_sheets,
+        "initialized_headers": [],
+        "extended_headers": [],
+        "unchanged_sheets": [],
+    }
+
+    for sheet_name, expected_headers in target_schemas.items():
+        escaped_name = _escaped_sheet_name(sheet_name)
+        header_result = target_service.spreadsheets().values().get(
+            spreadsheetId=target_spreadsheet_id,
+            range=f"'{escaped_name}'!1:1",
+        ).execute()
+        rows = header_result.get("values", [])
+        current_headers = rows[0] if rows else []
+        missing_headers = _missing_headers(current_headers, expected_headers)
+
+        if not missing_headers:
+            summary["unchanged_sheets"].append(sheet_name)
+            continue
+
+        start_column = len(current_headers) + 1
+        start_cell = f"{_column_label(start_column)}1"
+        target_service.spreadsheets().values().update(
+            spreadsheetId=target_spreadsheet_id,
+            range=f"'{escaped_name}'!{start_cell}",
+            valueInputOption="RAW",
+            body={"values": [missing_headers]},
+        ).execute()
+
+        if current_headers:
+            summary["extended_headers"].append(sheet_name)
+        else:
+            summary["initialized_headers"].append(sheet_name)
+
+    logger.info(
+        "Google Sheets setup completed: created=%d initialized=%d extended=%d unchanged=%d",
+        len(summary["created_sheets"]),
+        len(summary["initialized_headers"]),
+        len(summary["extended_headers"]),
+        len(summary["unchanged_sheets"]),
+    )
+    return summary
+
+
 def append_row(sheet_name: str, values: list) -> dict:
     """指定したシートの末尾へ1行追記する。"""
     if not isinstance(values, list):
@@ -204,9 +302,9 @@ class SheetsClient:
         values = [[row.get(header, "") for header in headers] for row in rows]
         return append_rows(sheet_name, values)
 
-    def initialize_schema(self) -> None:
-        for sheet_name, headers in schema_by_sheet().items():
-            self.ensure_sheet(sheet_name, headers)
+    def initialize_schema(self) -> dict[str, list[str]]:
+        """不足シートと不足ヘッダーを作成する。"""
+        return setup_sheets()
 
 
 def describe_google_api_error(error: HttpError) -> str:

@@ -14,16 +14,39 @@ data/
 outputs/
 knowledge/
 prompts/
+!discord-bot/src/prompts/
+!discord-bot/src/prompts/*.md
+!discord-bot/package-lock.json
 checklists/
 seminar-slide-factory/
 agents/
 scripts/
+!discord-bot/scripts/
+!discord-bot/scripts/*.js
 docs/*
 !docs/render_deploy.md
+!docs/output/
+!docs/output/*.md
 *.csv
 *.xlsx
 *.pdf
 *.pptx
+!discord-bot/package.json
+!seminar-video-lp/package.json
+!seminar-video-lp/package-lock.json
+!seminar-video-lp/tsconfig.json
+!seminar-video-lp/content/
+!seminar-video-lp/content/lp-config.json
+!seminar-video-lp/docs/
+!seminar-video-lp/docs/supabase-setup.sql
+!seminar-video-lp/scripts/
+!seminar-video-lp/scripts/*.mjs
+
+# Next.js / Node
+node_modules/
+.next/
+seminar-video-lp/node_modules/
+seminar-video-lp/.next/
 
 # Pythonキャッシュ
 **pycache**/

@@ -1,0 +1,185 @@
+version: "1.0"
+bot_name: "蓮司_AI秘書"
+rule:
+  never_auto_send_line_reply: true
+  human_final_approval_required: true
+  output_language: "ja"
+
+commands:
+  - name: "today"
+    slash: "/today"
+    phase: 3
+    priority: "mvp"
+    purpose: "今日の業務一覧を表示する"
+    inputs: []
+    output:
+      - "未返信LINE"
+      - "通話予定"
+      - "送信予定"
+      - "リスク顧客"
+      - "今日やるべき3件"
+    writes_to_sheets: false
+    safety:
+      - "本名と相談要約の表示範囲に注意する"
+
+  - name: "customer"
+    slash: "/customer 本名"
+    phase: 3
+    priority: "mvp"
+    purpose: "顧客カルテを表示する"
+    inputs:
+      - { name: "本名", type: "string", required: true }
+    output:
+      - "現在の週"
+      - "彼との現在地"
+      - "不安タイプ"
+      - "前回通話"
+      - "直近相談"
+      - "今週方針"
+    writes_to_sheets: false
+    safety:
+      - "検索候補が複数ある場合は確定質問を返す"
+
+  - name: "memo"
+    slash: "/memo 本名 内容"
+    phase: 3
+    priority: "mvp"
+    purpose: "倉本さんのメモを顧客カルテへ保存する"
+    inputs:
+      - { name: "本名", type: "string", required: true }
+      - { name: "内容", type: "text", required: true }
+    output:
+      - "保存先"
+      - "分類"
+      - "次回通話への反映"
+      - "リスク有無"
+    writes_to_sheets: true
+    target_sheet: "タスク管理またはLINE相談履歴"
+
+  - name: "reply"
+    slash: "/reply 本名 相談内容"
+    phase: 3
+    priority: "mvp"
+    purpose: "公式LINE返信案を生成する"
+    inputs:
+      - { name: "本名", type: "string", required: true }
+      - { name: "相談内容", type: "text", required: true }
+    output:
+      - "共感"
+      - "状況整理"
+      - "彼の見立て"
+      - "今やるべき行動"
+      - "安心の一言"
+      - "NG表現チェック"
+    writes_to_sheets: false
+    safety:
+      - "公式LINEへ自動送信しない"
+      - "復縁保証、断定、相手操作表現を出さない"
+
+  - name: "rewrite_line"
+    slash: "/rewrite_line 本名 LINE文面"
+    phase: 3
+    priority: "mvp"
+    purpose: "顧客が送ろうとしているLINEを添削する"
+    inputs:
+      - { name: "本名", type: "string", required: true }
+      - { name: "LINE文面", type: "text", required: true }
+    output:
+      - "送るべきか"
+      - "重い表現"
+      - "修正版"
+      - "タイミング"
+      - "送信後の注意"
+    writes_to_sheets: false
+
+  - name: "brief"
+    slash: "/brief 本名"
+    phase: 3
+    priority: "mvp"
+    purpose: "通話前ブリーフィングを生成する"
+    inputs:
+      - { name: "本名", type: "string", required: true }
+    output:
+      - "前回要点"
+      - "直近相談"
+      - "今回聞く質問"
+      - "今日のゴール"
+      - "注意点"
+    writes_to_sheets: false
+
+  - name: "status"
+    slash: "/status 本名"
+    phase: 6
+    priority: "later"
+    purpose: "彼の本音・現在地を整理する"
+    inputs:
+      - { name: "本名", type: "string", required: true }
+    output:
+      - "現在地レベル"
+      - "理由"
+      - "障害"
+      - "NG行動"
+      - "次の一手"
+    writes_to_sheets: false
+
+  - name: "aftercall"
+    slash: "/aftercall 本名 第何回 文字起こし"
+    phase: 5
+    priority: "later"
+    purpose: "通話文字起こしを要約し、通話メモへ保存する"
+    inputs:
+      - { name: "本名", type: "string", required: true }
+      - { name: "第何回", type: "number", required: true }
+      - { name: "文字起こし", type: "text", required: true }
+    output:
+      - "通話要約"
+      - "顧客の感情変化"
+      - "彼の現在地変化"
+      - "今回決めた行動"
+      - "宿題"
+      - "最終設計書素材"
+      - "リスク判定"
+    writes_to_sheets: true
+    target_sheet: "通話メモ"
+
+  - name: "risk"
+    slash: "/risk 本名"
+    phase: 6
+    priority: "later"
+    purpose: "返金・不満・依存・禁止相談リスクを判定する"
+    inputs:
+      - { name: "本名", type: "string", required: true }
+    output:
+      - "リスクスコア"
+      - "要因"
+      - "推奨対応"
+      - "送ってはいけない表現"
+    writes_to_sheets: true
+    target_sheet: "リスクログ"
+
+  - name: "knowledge"
+    slash: "/knowledge 内容"
+    phase: 6
+    priority: "later"
+    purpose: "良い返信や文面をナレッジ化する"
+    inputs:
+      - { name: "内容", type: "text", required: true }
+    output:
+      - "カテゴリ分類"
+      - "タグ"
+      - "月守りサポート転用候補"
+    writes_to_sheets: true
+    target_sheet: "ナレッジ"
+
+  - name: "sync"
+    slash: "/sync 本名"
+    phase: 6
+    priority: "later"
+    purpose: "スプレッドシート最新情報を再取得する"
+    inputs:
+      - { name: "本名", type: "string", required: true }
+    output:
+      - "同期結果"
+      - "差分"
+      - "エラー有無"
+    writes_to_sheets: false
