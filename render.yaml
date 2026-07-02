@@ -35,3 +35,9 @@ services:
         sync: false
       - key: GOOGLE_SERVICE_ACCOUNT_JSON
         sync: false
+      - key: NOTICE_PDF_URL
+        sync: false
+      - key: PRE_INTERVIEW_FORM_URL
+        sync: false
+      - key: ONBOARDING_DELIVERY_DELAY_MINUTES
+        value: 0

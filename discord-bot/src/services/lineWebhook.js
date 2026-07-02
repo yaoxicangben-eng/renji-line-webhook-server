@@ -1,6 +1,7 @@
 import { appendObject, readRows } from "../integrations/sheets.js";
 import { postToCustomerThread } from "../integrations/discordChannels.js";
 import { buildReplyDraft } from "./secretary.js";
+import { handleFollowOnboarding } from "./onboarding.js";
 import { detectRisk } from "./safety.js";
 import { limitText } from "../utils/text.js";
 
@@ -198,6 +199,8 @@ export async function handleLineWebhook(config, client, payload) {
     received: events.length,
     savedEvents: 0,
     savedConsultations: 0,
+    createdCustomers: 0,
+    queuedDeliveries: 0,
     skippedDuplicates: 0,
     postedDiscord: 0,
   };
@@ -212,6 +215,14 @@ export async function handleLineWebhook(config, client, payload) {
 
     if (event.type === "follow") {
       await saveFollowUser(config, event);
+      const onboarding = await handleFollowOnboarding(config, client, event);
+      if (onboarding.createdCustomer) {
+        summary.createdCustomers += 1;
+      }
+      summary.queuedDeliveries += onboarding.queuedDeliveries;
+      if (onboarding.postedDiscord) {
+        summary.postedDiscord += 1;
+      }
       continue;
     }
 

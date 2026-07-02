@@ -45,11 +45,16 @@ AI_PROVIDER=template
 ```text
 DISCORD_CHANNEL_ERROR_ID=
 LINE_CHANNEL_ACCESS_TOKEN=
+NOTICE_PDF_URL=
+PRE_INTERVIEW_FORM_URL=
+ONBOARDING_DELIVERY_DELAY_MINUTES=0
 LOG_LEVEL=info
 NODE_ENV=production
 ```
 
 `LINE_CHANNEL_ACCESS_TOKEN` は、現時点では公式LINEへ自動返信しないため必須ではありません。ただし今後、LINE側の追加機能を使う可能性があるため設定しておくと安全です。
+
+`NOTICE_PDF_URL` と `PRE_INTERVIEW_FORM_URL` は、LINE友だち追加時に送信管理へ予約する案内URLです。未設定でもBotは動きますが、送信管理予約は作成されません。
 
 ## OpenAI APIについて
 

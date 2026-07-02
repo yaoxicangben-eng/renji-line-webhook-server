@@ -36,6 +36,7 @@ Discord運用MVPとLINE Webhook通知まで実装済みです。
 - LINE Webhook受信
 - LINE相談のGoogle Sheets保存
 - 顧客ごとのDiscord通知スレッド自動作成
+- LINE友だち追加時の仮顧客作成と送信管理予約
 - Discordエラー通知チャンネルへの内部エラー通知
 - NG表現チェック
 - リスク検知とリスクログ保存
@@ -100,6 +101,7 @@ POST /line/webhook
 
 - LINE署名を検証する
 - `line_events` へ保存する
+- followイベントでは `顧客一覧` へ仮顧客を作成し、送信管理へ注意書きPDF・事前フォーム案内を予約する
 - テキスト相談を `LINE相談履歴` へ保存する
 - `DISCORD_CHANNEL_LINE_NOTICE_ID` が設定されていれば、顧客ごとのスレッドへDiscord通知する
 - LINEへは自動返信しない
@@ -151,6 +153,16 @@ OpenAI APIを使う場合だけ、以下を設定します。
 AI_PROVIDER=openai
 OPENAI_API_KEY=...
 ```
+
+LINE友だち追加時に送信管理へ予約するURL:
+
+```text
+NOTICE_PDF_URL=
+PRE_INTERVIEW_FORM_URL=
+ONBOARDING_DELIVERY_DELAY_MINUTES=0
+```
+
+この段階では送信管理へ予約するだけで、公式LINEへは自動送信しません。
 
 ## フィードバック記憶
 

@@ -59,6 +59,11 @@ export function loadConfig() {
       customerDir: process.env.OBSIDIAN_CUSTOMER_DIR || "蓮司_AI秘書/customers",
       knowledgeDir: process.env.OBSIDIAN_KNOWLEDGE_DIR || "蓮司_AI秘書/knowledge",
     },
+    onboarding: {
+      noticePdfUrl: process.env.NOTICE_PDF_URL || "",
+      preInterviewFormUrl: process.env.PRE_INTERVIEW_FORM_URL || "",
+      deliveryDelayMinutes: Number(process.env.ONBOARDING_DELIVERY_DELAY_MINUTES || 0),
+    },
     logLevel: process.env.LOG_LEVEL || "info",
   };
 }
