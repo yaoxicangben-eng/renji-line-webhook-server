@@ -1,0 +1,189 @@
+version: "1.0"
+primary_key: "顧客ID"
+timezone: "Asia/Tokyo"
+
+sheets:
+  - name: "顧客一覧"
+    purpose: "全顧客の親データ。顧客IDを軸にLINE、フォーム、Doc、PDF、履歴を紐づける。"
+    columns:
+      - { name: "顧客ID", type: "string", required: true, source: "system", update_timing: "LINE登録時または管理者登録時", references: ["全シート"] }
+      - { name: "LINEユーザーID", type: "string", required: true, source: "LINE Webhook", update_timing: "LINE登録時", references: ["LINE送信管理", "LINE相談履歴"] }
+      - { name: "名前", type: "string", required: false, source: "Googleフォームまたは管理者入力", update_timing: "フォーム回答時", references: ["PDF生成", "Doc生成"] }
+      - { name: "本名", type: "string", required: false, source: "管理者入力またはフォーム", update_timing: "顧客登録時", references: ["Discord表示"] }
+      - { name: "Discord通知名", type: "string", required: false, source: "管理者入力", update_timing: "顧客登録時", references: ["Discord通知"] }
+      - { name: "申込日", type: "date", required: false, source: "管理者入力または決済連携", update_timing: "申込時", references: ["ステータス管理"] }
+      - { name: "LINE登録日", type: "datetime", required: false, source: "LINE Webhook", update_timing: "LINE登録時", references: ["送信管理"] }
+      - { name: "開始日", type: "date", required: false, source: "管理者入力", update_timing: "初回通話日決定時", references: ["通話メモ"] }
+      - { name: "フォーム回答日", type: "datetime", required: false, source: "事前ヒアリング", update_timing: "フォーム回答時", references: ["送信管理"] }
+      - { name: "現在地レベル", type: "enum", required: false, source: "AIまたは蓮司", update_timing: "相談・通話後", references: ["返信案", "通話ブリーフィング"] }
+      - { name: "不安タイプ", type: "enum", required: false, source: "AIまたは蓮司", update_timing: "相談・通話後", references: ["返信案", "リスク判定"] }
+      - { name: "現在の週", type: "number", required: false, source: "system", update_timing: "週次更新", references: ["Discord /today"] }
+      - { name: "リスクスコア", type: "number", required: false, source: "AI", update_timing: "リスク判定時", references: ["リスクログ"] }
+      - { name: "最終対応日", type: "datetime", required: false, source: "system", update_timing: "LINE相談・通話・メモ保存時", references: ["Discord /today"] }
+      - { name: "事前鑑定Doc URL", type: "url", required: false, source: "Doc生成", update_timing: "事前鑑定Doc作成時", references: ["事前ヒアリング"] }
+      - { name: "事前鑑定PDF URL", type: "url", required: false, source: "PDF生成", update_timing: "PDF作成時", references: ["LINE送信管理"] }
+      - { name: "最終設計書Doc URL", type: "url", required: false, source: "Doc生成", update_timing: "最終設計書Doc作成時", references: ["通話メモ", "LINE相談履歴", "ワーク回答履歴"] }
+      - { name: "最終設計書PDF URL", type: "url", required: false, source: "PDF生成", update_timing: "最終設計書PDF作成時", references: ["LINE送信管理"] }
+      - { name: "ステータス", type: "enum", required: true, source: "system", update_timing: "各工程完了時", references: ["運用確認"] }
+      - { name: "注意書きPDF送信済み", type: "boolean", required: true, source: "LINE送信管理", update_timing: "LINE登録直後送信時", references: ["注意書き・トラブル対応"] }
+      - { name: "備考", type: "text", required: false, source: "管理者入力", update_timing: "随時", references: [] }
+
+  - name: "事前ヒアリング"
+    purpose: "事前鑑定シート生成のためのフォーム回答保存先。"
+    columns:
+      - { name: "タイムスタンプ", type: "datetime", required: true, source: "Googleフォーム", update_timing: "フォーム送信時", references: ["LINE送信管理"] }
+      - { name: "顧客ID", type: "string", required: true, source: "フォームURLパラメータ", update_timing: "フォーム送信時", references: ["顧客一覧"] }
+      - { name: "名前", type: "string", required: false, source: "Googleフォーム", update_timing: "フォーム送信時", references: ["顧客一覧"] }
+      - { name: "本人情報", type: "text", required: true, source: "Googleフォーム", update_timing: "フォーム送信時", references: ["AI生成"] }
+      - { name: "相手情報", type: "text", required: true, source: "Googleフォーム", update_timing: "フォーム送信時", references: ["AI生成"] }
+      - { name: "関係性", type: "text", required: true, source: "Googleフォーム", update_timing: "フォーム送信時", references: ["AI生成"] }
+      - { name: "悩み", type: "text", required: true, source: "Googleフォーム", update_timing: "フォーム送信時", references: ["AI生成"] }
+      - { name: "理想状態", type: "text", required: true, source: "Googleフォーム", update_timing: "フォーム送信時", references: ["AI生成"] }
+      - { name: "不安", type: "text", required: false, source: "Googleフォーム", update_timing: "フォーム送信時", references: ["AI生成"] }
+      - { name: "後悔行動", type: "text", required: false, source: "Googleフォーム", update_timing: "フォーム送信時", references: ["AI生成"] }
+      - { name: "AI生成ステータス", type: "enum", required: true, source: "system", update_timing: "AI生成時", references: ["Doc生成"] }
+      - { name: "AI生成結果", type: "text", required: false, source: "OpenAI API", update_timing: "AI生成時", references: ["Doc生成", "PDF生成"] }
+
+  - name: "LINE相談履歴"
+    purpose: "公式LINEで受けた相談、AI返信案、実送信文、対応ステータスを保存する。"
+    columns:
+      - { name: "日時", type: "datetime", required: true, source: "LINE Webhookまたは管理者入力", update_timing: "相談受信時", references: ["顧客一覧"] }
+      - { name: "顧客ID", type: "string", required: true, source: "顧客一覧", update_timing: "相談受信時", references: ["顧客一覧", "最終設計書"] }
+      - { name: "LINEユーザーID", type: "string", required: true, source: "LINE Webhook", update_timing: "相談受信時", references: ["顧客一覧"] }
+      - { name: "message_id", type: "string", required: false, source: "LINE Webhook", update_timing: "相談受信時", references: ["重複排除"] }
+      - { name: "line_event_id", type: "string", required: false, source: "LINE Webhook", update_timing: "相談受信時", references: ["重複排除"] }
+      - { name: "相談内容", type: "text", required: true, source: "LINE Webhookまたは管理者入力", update_timing: "相談受信時", references: ["AI返信案"] }
+      - { name: "分類", type: "enum", required: false, source: "AI", update_timing: "相談分類時", references: ["ナレッジ"] }
+      - { name: "相談分類", type: "enum", required: false, source: "AI", update_timing: "相談分類時", references: ["Discord通知"] }
+      - { name: "緊急度", type: "enum", required: false, source: "AI", update_timing: "相談分類時", references: ["Discord /today", "リスクログ"] }
+      - { name: "AI返信案", type: "text", required: false, source: "OpenAI API", update_timing: "下書き生成時", references: ["蓮司確認"] }
+      - { name: "NG表現チェック結果", type: "text", required: false, source: "AI", update_timing: "返信案生成時", references: ["送信前チェック"] }
+      - { name: "実送信文", type: "text", required: false, source: "蓮司入力", update_timing: "返信時", references: ["ナレッジ"] }
+      - { name: "対応ステータス", type: "enum", required: true, source: "system", update_timing: "対応更新時", references: ["運用確認"] }
+      - { name: "リスクフラグ", type: "boolean", required: false, source: "AIまたは蓮司", update_timing: "リスク検知時", references: ["注意書き・トラブル対応"] }
+      - { name: "リスク判定", type: "text", required: false, source: "AI", update_timing: "相談分類時", references: ["リスクログ"] }
+      - { name: "Discord通知URL", type: "url", required: false, source: "Discord Bot", update_timing: "Discord投稿時", references: ["Discord通知ログ"] }
+
+  - name: "通話メモ"
+    purpose: "週1LINE通話の録画、文字起こし、要約、宿題、次回テーマを保存する。"
+    columns:
+      - { name: "顧客ID", type: "string", required: true, source: "顧客一覧", update_timing: "通話メモ作成時", references: ["顧客一覧", "最終設計書"] }
+      - { name: "第何回", type: "number", required: true, source: "管理者入力", update_timing: "通話後", references: ["最終設計書"] }
+      - { name: "通話日", type: "date", required: true, source: "管理者入力", update_timing: "通話後", references: ["最終設計書"] }
+      - { name: "録画URL", type: "url", required: false, source: "Google Drive", update_timing: "録画保存時", references: ["文字起こし"] }
+      - { name: "録画貼付内容", type: "text", required: false, source: "Discord", update_timing: "aftercall実行時", references: ["通話要約"] }
+      - { name: "文字起こし", type: "text", required: false, source: "AI文字起こし", update_timing: "文字起こし完了時", references: ["AI要約"] }
+      - { name: "AI要約", type: "text", required: false, source: "OpenAI API", update_timing: "要約生成時", references: ["最終設計書"] }
+      - { name: "決定行動", type: "text", required: false, source: "通話メモまたはAI", update_timing: "通話後", references: ["作業マニュアル"] }
+      - { name: "宿題", type: "text", required: false, source: "通話メモまたはAI", update_timing: "通話後", references: ["次回通話"] }
+      - { name: "次回テーマ", type: "text", required: false, source: "通話メモまたはAI", update_timing: "通話後", references: ["次回通話"] }
+      - { name: "最終レポート素材", type: "text", required: false, source: "AI", update_timing: "aftercall実行時", references: ["最終30日設計書"] }
+      - { name: "Discord投稿URL", type: "url", required: false, source: "Discord Bot", update_timing: "Discord投稿時", references: ["Discord通知ログ"] }
+      - { name: "月守りサポート提案候補", type: "boolean", required: false, source: "AIまたは蓮司", update_timing: "aftercall実行時", references: ["商品改善メモ"] }
+      - { name: "リスク判定", type: "text", required: false, source: "AI", update_timing: "aftercall実行時", references: ["リスクログ"] }
+
+  - name: "ワーク回答履歴"
+    purpose: "不安時ワークの回答、AI整理、推奨行動、LINE案を保存する。"
+    columns:
+      - { name: "日時", type: "datetime", required: true, source: "Googleフォーム", update_timing: "フォーム送信時", references: ["顧客一覧"] }
+      - { name: "顧客ID", type: "string", required: true, source: "フォームURLパラメータ", update_timing: "フォーム送信時", references: ["顧客一覧", "最終設計書"] }
+      - { name: "出来事", type: "text", required: true, source: "Googleフォーム", update_timing: "フォーム送信時", references: ["AI整理"] }
+      - { name: "感情", type: "text", required: true, source: "Googleフォーム", update_timing: "フォーム送信時", references: ["AI整理"] }
+      - { name: "怖いこと", type: "text", required: true, source: "Googleフォーム", update_timing: "フォーム送信時", references: ["AI整理"] }
+      - { name: "彼にわかってほしいこと", type: "text", required: false, source: "Googleフォーム", update_timing: "フォーム送信時", references: ["AI整理"] }
+      - { name: "やりそうな行動", type: "text", required: true, source: "Googleフォーム", update_timing: "フォーム送信時", references: ["AI整理"] }
+      - { name: "望む未来", type: "text", required: true, source: "Googleフォーム", update_timing: "フォーム送信時", references: ["AI整理"] }
+      - { name: "AI整理結果", type: "text", required: false, source: "OpenAI API", update_timing: "AI整理時", references: ["蓮司確認"] }
+      - { name: "推奨行動", type: "text", required: false, source: "OpenAI API", update_timing: "AI整理時", references: ["蓮司確認"] }
+      - { name: "LINE文面案", type: "text", required: false, source: "OpenAI API", update_timing: "AI整理時", references: ["蓮司確認"] }
+      - { name: "確認済み", type: "boolean", required: true, source: "蓮司入力", update_timing: "確認時", references: ["LINE返信"] }
+
+  - name: "送信管理"
+    purpose: "注意書き、事前鑑定、最終設計書などのLINE送信予定、送信済み、エラーを管理する。"
+    columns:
+      - { name: "送信ID", type: "string", required: true, source: "system", update_timing: "送信予約時", references: ["ログ"] }
+      - { name: "顧客ID", type: "string", required: true, source: "顧客一覧", update_timing: "送信予約時", references: ["顧客一覧"] }
+      - { name: "LINEユーザーID", type: "string", required: true, source: "顧客一覧", update_timing: "送信予約時", references: ["LINE API"] }
+      - { name: "送信種別", type: "enum", required: true, source: "system", update_timing: "送信予約時", references: ["テンプレ一覧"] }
+      - { name: "送信内容", type: "text", required: true, source: "テンプレ一覧またはsystem", update_timing: "送信予約時", references: ["LINE API"] }
+      - { name: "PDF URL", type: "url", required: false, source: "PDF生成", update_timing: "送信予約時", references: ["LINE API"] }
+      - { name: "送信予定時刻", type: "datetime", required: true, source: "system", update_timing: "送信予約時", references: ["時間主導トリガー"] }
+      - { name: "送信済み", type: "boolean", required: true, source: "system", update_timing: "送信成功時", references: ["運用ログ"] }
+      - { name: "送信日時", type: "datetime", required: false, source: "system", update_timing: "送信成功時", references: ["運用ログ"] }
+      - { name: "エラー", type: "text", required: false, source: "system", update_timing: "送信失敗時", references: ["管理者通知"] }
+      - { name: "再送回数", type: "number", required: true, source: "system", update_timing: "送信失敗時", references: ["再送制御"] }
+
+  - name: "テンプレ一覧"
+    purpose: "プロンプト、PDF見出し、LINE文面をコードから分離して管理する。"
+    columns:
+      - { name: "テンプレ名", type: "string", required: true, source: "管理者入力", update_timing: "テンプレ作成時", references: ["AI生成", "LINE送信"] }
+      - { name: "用途", type: "enum", required: true, source: "管理者入力", update_timing: "テンプレ作成時", references: ["AI生成", "LINE送信"] }
+      - { name: "プロンプト", type: "text", required: false, source: "管理者入力", update_timing: "更新時", references: ["OpenAI API"] }
+      - { name: "PDF見出し", type: "text", required: false, source: "管理者入力", update_timing: "更新時", references: ["PDF生成"] }
+      - { name: "LINE文面", type: "text", required: false, source: "管理者入力", update_timing: "更新時", references: ["LINE API"] }
+      - { name: "有効", type: "boolean", required: true, source: "管理者入力", update_timing: "更新時", references: ["system"] }
+
+  - name: "ナレッジ"
+    purpose: "良い返信、成果文面、NG事例、顧客タイプ別対応を蓄積する。"
+    columns:
+      - { name: "登録日", type: "datetime", required: true, source: "管理者入力またはAI", update_timing: "登録時", references: ["作業マニュアル"] }
+      - { name: "カテゴリ", type: "enum", required: true, source: "管理者入力またはAI", update_timing: "登録時", references: ["LINE相談履歴"] }
+      - { name: "内容", type: "text", required: true, source: "管理者入力", update_timing: "登録時", references: ["返信案生成"] }
+      - { name: "効果", type: "text", required: false, source: "管理者入力", update_timing: "振り返り時", references: ["改善"] }
+      - { name: "注意点", type: "text", required: false, source: "管理者入力またはAI", update_timing: "登録時", references: ["リスクチェック"] }
+      - { name: "顧客タイプ", type: "string", required: false, source: "管理者入力またはAI", update_timing: "登録時", references: ["返信案生成"] }
+      - { name: "個人情報除去済み", type: "boolean", required: true, source: "管理者確認", update_timing: "登録時", references: ["セキュリティ"] }
+      - { name: "元顧客", type: "string", required: false, source: "Discord Bot", update_timing: "knowledge登録時", references: ["顧客一覧"] }
+      - { name: "タグ", type: "string", required: false, source: "AIまたは蓮司", update_timing: "knowledge登録時", references: ["返信案生成"] }
+      - { name: "月守り転用可否", type: "boolean", required: false, source: "AIまたは蓮司", update_timing: "knowledge登録時", references: ["商品改善メモ"] }
+      - { name: "Discord登録URL", type: "url", required: false, source: "Discord Bot", update_timing: "knowledge登録時", references: ["Discord通知ログ"] }
+
+  - name: "Discord通知ログ"
+    purpose: "Discordに投稿した通知を追跡する。"
+    columns:
+      - { name: "日時", type: "datetime", required: true, source: "Discord Bot", update_timing: "投稿時", references: [] }
+      - { name: "顧客ID", type: "string", required: false, source: "顧客一覧", update_timing: "投稿時", references: ["顧客一覧"] }
+      - { name: "本名", type: "string", required: false, source: "顧客一覧", update_timing: "投稿時", references: ["Discord表示"] }
+      - { name: "チャンネル", type: "string", required: true, source: "Discord Bot", update_timing: "投稿時", references: ["discord_channels.yaml"] }
+      - { name: "メッセージURL", type: "url", required: true, source: "Discord Bot", update_timing: "投稿時", references: ["LINE相談履歴", "通話メモ"] }
+      - { name: "通知種別", type: "enum", required: true, source: "Discord Bot", update_timing: "投稿時", references: ["Bot設定"] }
+      - { name: "処理結果", type: "enum", required: true, source: "Discord Bot", update_timing: "投稿後", references: ["エラーログ"] }
+
+  - name: "タスク管理"
+    purpose: "未返信、通話準備、レポート作成などの業務を管理する。"
+    columns:
+      - { name: "タスクID", type: "string", required: true, source: "system", update_timing: "タスク作成時", references: [] }
+      - { name: "顧客ID", type: "string", required: false, source: "顧客一覧", update_timing: "タスク作成時", references: ["顧客一覧"] }
+      - { name: "内容", type: "text", required: true, source: "Discord Botまたは蓮司", update_timing: "タスク作成時", references: ["Discord /today"] }
+      - { name: "期限", type: "datetime", required: false, source: "Discord Botまたは蓮司", update_timing: "タスク作成時", references: ["Discord /today"] }
+      - { name: "優先度", type: "enum", required: false, source: "AIまたは蓮司", update_timing: "タスク作成時", references: ["Discord /today"] }
+      - { name: "完了ステータス", type: "enum", required: true, source: "system", update_timing: "更新時", references: ["Discord /today"] }
+      - { name: "作成元", type: "enum", required: false, source: "system", update_timing: "タスク作成時", references: [] }
+
+  - name: "リスクログ"
+    purpose: "返金、不満、依存、禁止相談の兆候を保存する。"
+    columns:
+      - { name: "日時", type: "datetime", required: true, source: "system", update_timing: "リスク検知時", references: [] }
+      - { name: "顧客ID", type: "string", required: true, source: "顧客一覧", update_timing: "リスク検知時", references: ["顧客一覧"] }
+      - { name: "発言", type: "text", required: true, source: "LINE相談またはDiscord", update_timing: "リスク検知時", references: ["LINE相談履歴"] }
+      - { name: "リスク種別", type: "enum", required: true, source: "AI", update_timing: "リスク検知時", references: ["Discord /risk"] }
+      - { name: "スコア", type: "number", required: true, source: "AI", update_timing: "リスク検知時", references: ["顧客一覧"] }
+      - { name: "推奨対応", type: "text", required: false, source: "AI", update_timing: "リスク検知時", references: ["Discord通知"] }
+      - { name: "対応済み", type: "boolean", required: true, source: "蓮司", update_timing: "対応後", references: ["Discord /today"] }
+
+  - name: "Bot設定"
+    purpose: "Discord Botの運用設定をコードから分離して管理する。"
+    columns:
+      - { name: "キー", type: "string", required: true, source: "管理者入力", update_timing: "設定時", references: ["Discord Bot"] }
+      - { name: "値", type: "string", required: true, source: "管理者入力", update_timing: "設定時", references: ["Discord Bot"] }
+      - { name: "説明", type: "text", required: false, source: "管理者入力", update_timing: "設定時", references: [] }
+      - { name: "有効", type: "boolean", required: true, source: "管理者入力", update_timing: "設定時", references: ["Discord Bot"] }
+
+  - name: "エラーログ"
+    purpose: "Discord、LINE、OpenAI、Google連携のエラーを追跡する。"
+    columns:
+      - { name: "発生日時", type: "datetime", required: true, source: "system", update_timing: "エラー発生時", references: [] }
+      - { name: "機能", type: "string", required: true, source: "system", update_timing: "エラー発生時", references: ["Discord Bot"] }
+      - { name: "エラー内容", type: "text", required: true, source: "system", update_timing: "エラー発生時", references: ["Discordエラー通知"] }
+      - { name: "再実行可否", type: "boolean", required: false, source: "system", update_timing: "エラー発生時", references: ["運用判断"] }
+      - { name: "対応状況", type: "enum", required: true, source: "蓮司", update_timing: "対応更新時", references: ["Discord /today"] }

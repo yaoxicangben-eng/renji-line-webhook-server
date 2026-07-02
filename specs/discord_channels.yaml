@@ -1,0 +1,81 @@
+version: "1.0"
+server_policy:
+  owner_only: true
+  external_invites_allowed: false
+  use_real_names: true
+  hide_sensitive_details_in_notifications: true
+  sensitive_fields_not_to_display:
+    - "電話番号"
+    - "住所"
+    - "生年月日"
+    - "決済情報"
+
+channels:
+  - key: "secretary_inbox"
+    name: "00_秘書-inbox"
+    purpose: "倉本さんが自由に指示、顧客メモ、思いつきを投げる場所"
+    bot_actions:
+      - "顧客名を検出する"
+      - "顧客カルテへ追記する"
+      - "分類不能なら確認質問を返す"
+    env_var: "DISCORD_CHANNEL_SECRETARY_INBOX_ID"
+
+  - key: "today"
+    name: "01_今日の対応"
+    purpose: "毎朝の対応一覧、未返信、通話予定、送信予定、リスク顧客を表示する"
+    bot_actions:
+      - "/today の出力先"
+      - "重要タスクを優先順に表示する"
+    env_var: "DISCORD_CHANNEL_TODAY_ID"
+
+  - key: "line_notice"
+    name: "02_LINE相談通知"
+    purpose: "公式LINEから届いた顧客相談を自動通知する"
+    bot_actions:
+      - "相談内容を表示する"
+      - "顧客履歴を要約する"
+      - "返信案を表示する"
+      - "NGチェックとリスク判定を表示する"
+    env_var: "DISCORD_CHANNEL_LINE_NOTICE_ID"
+
+  - key: "call_briefing"
+    name: "03_通話ブリーフィング"
+    purpose: "通話前準備と通話後要約の出力先"
+    bot_actions:
+      - "/brief の出力先"
+      - "/aftercall の出力先"
+      - "通話要約を通話メモへ保存する"
+    env_var: "DISCORD_CHANNEL_CALL_BRIEFING_ID"
+
+  - key: "risk"
+    name: "04_リスク検知"
+    purpose: "返金、不満、依存、禁止相談の兆候を集約する"
+    bot_actions:
+      - "リスクスコアが一定以上なら通知する"
+      - "推奨対応を表示する"
+    env_var: "DISCORD_CHANNEL_RISK_ID"
+
+  - key: "knowledge"
+    name: "05_ナレッジ蓄積"
+    purpose: "良かった返信、成果文面、失敗例、顧客タイプ別対応を保存する"
+    bot_actions:
+      - "/knowledge でナレッジ化する"
+      - "月守りサポートの文面ストックに転用候補を付ける"
+    env_var: "DISCORD_CHANNEL_KNOWLEDGE_ID"
+
+  - key: "product_memo"
+    name: "06_商品改善メモ"
+    purpose: "サービス改善、スライド改善、月守りサポート案を保存する"
+    bot_actions:
+      - "頻出悩みを週次でまとめる"
+      - "商品改善案を整理する"
+    env_var: "DISCORD_CHANNEL_PRODUCT_MEMO_ID"
+
+  - key: "error"
+    name: "07_エラー通知"
+    purpose: "Webhook、OpenAI、GAS、Drive、Renderのエラー通知"
+    bot_actions:
+      - "エラー内容を表示する"
+      - "発生箇所を表示する"
+      - "再実行方法を表示する"
+    env_var: "DISCORD_CHANNEL_ERROR_ID"
