@@ -27,10 +27,12 @@ Discord運用MVPとLINE Webhook通知まで実装済みです。
 - `/reply` LINE返信案生成
 - `/rewrite_line` LINE文面添削
 - `/brief` 通話前ブリーフィング生成
+- `/status` 彼との現在地と次の一手を整理
 - `/aftercall` 通話後要約と通話メモ保存
 - `/risk` 顧客リスク判定とリスクログ保存
 - `/knowledge` 良い返信・失敗例・対応ルールのナレッジ保存
 - `/feedback` 返信ルール・改善指示の保存
+- `/sync` 顧客情報の読み取り状況確認
 - LINE Webhook受信
 - LINE相談のGoogle Sheets保存
 - 顧客ごとのDiscord通知スレッド自動作成
@@ -79,6 +81,8 @@ npm run check:deploy
 ```bash
 npm run register-commands
 ```
+
+本番起動時にもスラッシュコマンドは自動登録されます。
 
 Bot起動:
 

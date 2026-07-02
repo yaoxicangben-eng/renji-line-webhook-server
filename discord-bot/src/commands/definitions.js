@@ -62,6 +62,15 @@ const commands = [
         .setRequired(true),
     ),
   new SlashCommandBuilder()
+    .setName("status")
+    .setDescription("彼との現在地と次の一手を整理します。")
+    .addStringOption((option) =>
+      option
+        .setName("name")
+        .setDescription("本名または表示名")
+        .setRequired(true),
+    ),
+  new SlashCommandBuilder()
     .setName("feedback")
     .setDescription("返信文の作り方ルールを記録します。")
     .addStringOption((option) =>
@@ -164,6 +173,15 @@ const commands = [
         .setName("reuse_monthly")
         .setDescription("月守りサポートへ転用できる内容か")
         .setRequired(false),
+    ),
+  new SlashCommandBuilder()
+    .setName("sync")
+    .setDescription("顧客情報の読み取り状況を確認します。")
+    .addStringOption((option) =>
+      option
+        .setName("name")
+        .setDescription("本名または表示名")
+        .setRequired(true),
     ),
 ];
 

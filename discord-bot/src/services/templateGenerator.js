@@ -22,6 +22,14 @@ function extractTranscript(text) {
   return extract(/文字起こし:\n([\s\S]*?)(?:\n\n過去のフィードバック|$)/, text, "");
 }
 
+function extractCurrentLevel(text) {
+  return extract(/現在地レベル:\s*(.+)/, text, "未設定");
+}
+
+function extractAnxietyType(text) {
+  return extract(/不安タイプ:\s*(.+)/, text, "未設定");
+}
+
 function extractFeedbackRules(text) {
   const match = text.match(/過去のフィードバックとして、次のルールを必ず守る:\n([\s\S]+)$/);
   if (!match) {
@@ -134,6 +142,47 @@ export function generateTemplateText(promptName, userContent) {
       "",
       "注意点",
       "復縁保証や相手の気持ちの断定は避け、見立てとして伝えてください。",
+    ].join("\n");
+  }
+
+  if (promptName === "status.md") {
+    const situation = extractObsidianSituation(userContent);
+    const consultation = extractConsultation(userContent);
+    const currentLevel = extractCurrentLevel(userContent);
+    const anxietyType = extractAnxietyType(userContent);
+    const source = `${situation}\n${consultation}`;
+    const needsPause = /追いLINE|返信|不安|確認|焦り|返事/.test(source);
+    return [
+      "現在地レベル",
+      currentLevel === "未設定"
+        ? "未設定です。直近相談を見る限り、まずは「反応待ち・距離感調整中」として仮置きするのが安全です。"
+        : currentLevel,
+      "",
+      "そう見る理由",
+      needsPause
+        ? "相手の反応を早く確認したい不安が出ており、ここで動きすぎると負担感として伝わる可能性があります。"
+        : "直近情報だけでは断定できません。相手の言葉より、返信頻度・会話の温度感・本人の不安行動を見て判断する段階です。",
+      "",
+      "いま障害になっていること",
+      anxietyType === "未設定"
+        ? "不安タイプが未設定です。次回対応で、確認行動・自責・怒り・我慢のどれが強いか確認してください。"
+        : `${anxietyType}が強く出ると、相手の反応を待つ時間が苦しくなりやすい点です。`,
+      "",
+      "今やると悪化しやすいNG行動",
+      "- 返事を急かす",
+      "- 長文で不安をぶつける",
+      "- 彼の気持ちを確認しようとする",
+      "- 反応がないまま追加で送る",
+      "",
+      "次の一手",
+      needsPause
+        ? "今日は追加連絡を控え、送る場合も短く、責めず、返事を求めない文面に整えるのが安全です。"
+        : "次の一手は1つに絞り、相手の反応を取りにいくより関係を悪化させない行動を優先してください。",
+      "",
+      "倉本さんが確認すべき質問",
+      "- 最後に彼から自然な反応があったのはいつか",
+      "- いま送ろうとしている文面はあるか",
+      "- 本当は彼に何を確認したいのか",
     ].join("\n");
   }
 

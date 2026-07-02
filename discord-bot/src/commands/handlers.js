@@ -5,6 +5,8 @@ import {
   buildReplyDraft,
   buildRewriteDraft,
   buildRiskReport,
+  buildStatusReport,
+  buildSyncReport,
   buildTodaySummary,
   saveKnowledge,
   saveFeedback,
@@ -84,6 +86,11 @@ export async function handleInteraction(interaction, config) {
     return;
   }
 
+  if (commandName === "status") {
+    await replyLong(interaction, await buildStatusReport(config, name));
+    return;
+  }
+
   if (commandName === "aftercall") {
     const session = interaction.options.getInteger("session", true);
     const transcript = interaction.options.getString("transcript", true);
@@ -98,6 +105,11 @@ export async function handleInteraction(interaction, config) {
   if (commandName === "risk") {
     const note = interaction.options.getString("note", false) || "";
     await replyLong(interaction, await buildRiskReport(config, name, note));
+    return;
+  }
+
+  if (commandName === "sync") {
+    await replyLong(interaction, await buildSyncReport(config, name));
     return;
   }
 

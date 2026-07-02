@@ -163,6 +163,10 @@ async function main() {
     return;
   }
 
+  if (config.discord.applicationId) {
+    await registerCommands(config);
+  }
+
   const client = await startBot(config);
   const server = startHealthServer(config, client);
   try {

@@ -243,6 +243,81 @@ export async function buildBrief(config, name) {
   return [`## 通話前ブリーフィング: ${customerName(customer)}`, "", draft].join("\n");
 }
 
+export async function buildStatusReport(config, name) {
+  const customer = await requireSingleCustomer(config, name);
+  const context = await getCustomerContext(config, customer);
+  const draft = await ai(
+    config,
+    "status.md",
+    [
+      "以下の顧客情報をもとに、彼との現在地と次の一手を整理してください。",
+      "断定せず、倉本さんが確認するための見立てとして書いてください。",
+      "",
+      contextSummary(customer, context),
+      "",
+      "相談内容:",
+      context.lineConsultations
+        .map((row) => `${row["日時"] || "日時不明"}: ${row["相談内容"] || ""}`)
+        .join("\n") || "直近相談なし",
+    ].join("\n"),
+  );
+  const ng = checkNgExpressions(draft);
+
+  return [
+    `## 現在地整理: ${customerName(customer)}`,
+    "",
+    draft,
+    "",
+    "## チェック",
+    `NG表現: ${ng.summary}`,
+    "",
+    "公式LINEへは自動送信していません。",
+  ].join("\n");
+}
+
+export async function buildSyncReport(config, name) {
+  const customer = await requireSingleCustomer(config, name);
+  const context = await getCustomerContext(config, customer);
+  const hasLineUserId = Boolean(customer["LINEユーザーID"]);
+  const hasObsidian = Boolean(context.obsidianSituation);
+  const openTasks = context.tasks.length;
+  const lastLine = context.lineConsultations[0];
+  const lastCall = context.callNotes[0];
+  const missing = [
+    customer["現在地レベル"] ? "" : "現在地レベル",
+    customer["不安タイプ"] ? "" : "不安タイプ",
+    hasLineUserId ? "" : "LINEユーザーID",
+    context.lineConsultations.length ? "" : "LINE相談履歴",
+    context.callNotes.length ? "" : "通話メモ",
+  ].filter(Boolean);
+
+  return [
+    `## 同期確認: ${customerName(customer)}`,
+    "",
+    "読み取り結果:",
+    `- 顧客一覧: OK (${customer["顧客ID"] || "顧客ID未設定"})`,
+    `- LINEユーザーID: ${hasLineUserId ? "あり" : "未登録"}`,
+    `- LINE相談履歴: ${context.lineConsultations.length}件`,
+    `- 通話メモ: ${context.callNotes.length}件`,
+    `- 未完了タスク: ${openTasks}件`,
+    `- Obsidian顧客状況メモ: ${hasObsidian ? "あり" : "なし"}`,
+    "",
+    "最新情報:",
+    `- 最新LINE相談: ${lastLine ? `${lastLine["日時"] || "日時不明"} / ${limitText(lastLine["相談内容"], 120)}` : "なし"}`,
+    `- 最新通話メモ: ${lastCall ? `${lastCall["通話日"] || "日付不明"} / ${limitText(lastCall["AI要約"], 120)}` : "なし"}`,
+    "",
+    "不足・確認したい項目:",
+    missing.length ? missing.map((item) => `- ${item}`).join("\n") : "- 主要項目は揃っています",
+    "",
+    "次に使うコマンド:",
+    "- 現在地を整理する: `/status`",
+    "- LINE返信案を作る: `/reply`",
+    "- 通話前確認: `/brief`",
+    "",
+    "公式LINEへは自動送信していません。",
+  ].join("\n");
+}
+
 function extractAftercallSection(text, heading) {
   const pattern = new RegExp(`${heading}\\n([\\s\\S]*?)(?:\\n\\n[^\\n]+\\n|$)`);
   const match = text.match(pattern);
